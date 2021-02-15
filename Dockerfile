@@ -1,29 +1,28 @@
-FROM ruby:2.6.3
+FROM madnight/docker-alpine-wkhtmltopdf AS build-wkhtmltopdf
 
-# https://yarnpkg.com/lang/en/docs/install/#debian-stable
-RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - && \
-  echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
-  apt-get update -qq && apt-get install -y nodejs postgresql-client vim && \
-  apt-get install -y yarn && \
-  apt-get install -y imagemagick && \
-  apt-get install -y libvips-tools && \
-  apt-get install -y locales
+FROM ruby:2.7.2-alpine as build-base
 
-RUN echo "ja_JP.UTF-8 UTF-8" > /etc/locale.gen && \
-  locale-gen ja_JP.UTF-8 && \
-  /usr/sbin/update-locale LANG=ja_JP.UTF-8
-ENV LC_ALL ja_JP.UTF-8
+RUN apk add --update --no-cache \
+    build-base tzdata nodejs postgresql-dev postgresql-client \
+    libxslt-dev libxml2-dev imagemagick yarn git ca-certificates openssh less sqlite-dev
 
-ENV APP_PATH=/app
-RUN mkdir $APP_PATH
-WORKDIR $APP_PATH
-COPY Gemfile "${APP_PATH}/Gemfile"
-COPY Gemfile.lock "${APP_PATH}/Gemfile.lock"
-COPY . /app
+FROM build-base as build-ci
 
-COPY entrypoint.sh /usr/bin/
-RUN chmod +x /usr/bin/entrypoint.sh
-ENTRYPOINT ["entrypoint.sh"]
+COPY Gemfile* ./
+RUN bundle install --jobs 20 --retry 5
+
+RUN yarn install --modules-folder /node_modules/
+
+FROM build-base as build-dev
+WORKDIR /app
+
+COPY Gemfile* /app/
+RUN bundle install --jobs 20 --retry 5
+
+COPY package.json /app/
+RUN yarn install
+
+COPY . /app/
+
 EXPOSE 3000
-
-CMD ["rails", "server", "-b", "0.0.0.0"]
+CMD bundle exec rails s -b 0.0.0.0
