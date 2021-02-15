@@ -1,18 +1,23 @@
 <p id="notice"><%= notice %></p>
 
-<h1>Authors</h1>
+<div class="u-flex u-flex--alignCenter">
+    <h1 class="u-mr--2"><%= "#{Author.count} Authors" %></h1>
+  <%= link_to 'New Author', new_author_path %>
+</div>
 
 <table>
   <thead>
     <tr>
+      <th>ID</th>
       <th>Name</th>
-      <th colspan="3"></th>
+      <th colspan="3">Actions</th>
     </tr>
   </thead>
 
   <tbody>
     <% @authors.each do |author| %>
       <tr>
+        <td><%= author.id %></td>
         <td><%= author.name %></td>
         <td><%= link_to 'Show', author %></td>
         <td><%= link_to 'Edit', edit_author_path(author) %></td>
@@ -23,5 +28,3 @@
 </table>
 
 <br>
-
-<%= link_to 'New Author', new_author_path %>
