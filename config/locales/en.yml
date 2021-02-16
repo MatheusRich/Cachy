@@ -32,4 +32,4 @@
 en:
   time:
     formats:
-      time: "%Y | %H:%M:%S"
+      time: "%Y - %H:%M:%S"
